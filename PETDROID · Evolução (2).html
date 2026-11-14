@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PETDROID · Evolução</title>
+<style>
+:root{--bg:#0b100d;--cartao:#141b17;--borda:#25362b;--destaque:#63e56f;--texto:#d6f5df;--suave:#8aa595;color-scheme:dark;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 32px}
+h1{margin:0;text-align:center;font-size:30px;letter-spacing:.12em;color:var(--destaque)}
+.sub{text-align:center;color:var(--suave);font-size:13px;margin:4px 0 16px}
+#sw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--borda);background:var(--c);padding:0;cursor:pointer}
+.sw.r{border-color:#ffe9a0;box-shadow:0 0 8px var(--c)}
+.sw.on{outline:2px solid var(--texto);outline-offset:3px}
+#info{text-align:center;margin:16px 0 14px;font-size:14px;color:var(--suave)}#info b{color:var(--texto)}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.c{background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:8px 8px 12px;text-align:center}
+.c canvas{width:100%;max-width:170px;height:auto;aspect-ratio:170/160}
+.n{font-size:14px;font-weight:700}.l{font-size:12px;color:var(--suave);margin-top:2px}
+.nota{color:var(--suave);font-size:11px;text-align:center;margin-top:22px}
+</style>
+</head>
+<body>
+<h1>PETDROID</h1>
+<div class="sub">evolução visual por nível</div>
+<div id="sw"></div>
+<div id="info"></div>
+<div class="grade" id="gr"></div>
+<div class="nota">O rosto é sempre o mesmo. A cada evolução ganha detalhes novos: antenas, módulos, aura e coroa.</div>
+<script>
+const COM=[["Verde-esmeralda","#63e56f","#3ee877","#c8ffd8"],["Verde-limão","#b5ff2e","#c6ff4d","#f2ffd0"],["Azul-ciano","#2ee6e6","#4df0f0","#d0ffff"],["Azul-elétrico","#2f7bff","#4d95ff","#d6e6ff"],["Azul-marinho","#2a4fb8","#4d74e0","#c9d6ff"],["Roxo","#8b3dff","#a368ff","#e6d6ff"],["Lilás","#c9a0ff","#d7b8ff","#f3e9ff"],["Rosa","#ff8ac4","#ff9fd0","#ffe0f0"],["Magenta","#ff2bd6","#ff55e0","#ffd0f7"],["Vermelho","#ff3b3b","#ff5c5c","#ffd6d6"],["Laranja","#ff8a1f","#ffa04d","#ffe3c7"],["Amarelo","#ffe63b","#fff066","#fffbd0"],["Dourado","#e6b422","#f2c94c","#fff1c2"],["Branco","#f2f2f2","#ffffff","#c9d3ce"],["Preto","#4a4a4a","#9a9a9a","#e8e8e8"]].map(a=>[...a,6.4,""]);
+const RAR=[["Ouro metálico","#e6b422","#e6b422","#ffffff",1.2,"metal"],["Ciano cristal","#29d9e6","#29d9e6","#ffffff",1.0,"cristal"],["Roxo elétrico","#8b3dff","#9b5cff","#e3c8ff",0.8,"raio"],["Fogo","#ff6a1a","#ff6a1a","#fff3b0",0.5,"fogo"],["Verde elétrico","#6bff1f","#6bff1f","#e4ffb8",0.5,"veio"]];
+const T=[...COM,...RAR].map((a,i)=>({i:i+1,nome:a[0],m:a[1],o:a[2],l:a[3],chance:a[4],fx:a[5]}));
+const ETAPAS=[["Filhote","Nível 1 a 9"],["Jovem","Nível 10 a 24"],["Adulto","Nível 25 a 49"],["Mestre","Nível 50 a 74"],["Lendário","Nível 75 a 99"],["Supremo","Nível 100"]];
+const pct=n=>n.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
+const DPR=window.devicePixelRatio||1;
+let cor=T[0];
+
+const sw=document.getElementById("sw"),gr=document.getElementById("gr"),info=document.getElementById("info");
+function sel(p){cor=p;T.forEach(q=>q.b.classList.toggle("on",q===p));
+  info.innerHTML=`<b>${p.i}. ${p.nome}</b> · chance ${pct(p.chance)}${p.fx?" · rara":""}`}
+T.forEach(p=>{const b=document.createElement("button");b.className="sw"+(p.fx?" r":"");b.style.setProperty("--c",p.m);
+  b.title=p.nome;b.setAttribute("aria-label",p.nome);b.onclick=()=>sel(p);sw.appendChild(b);p.b=b});
+const CTX=ETAPAS.map(e=>{const d=document.createElement("div");d.className="c";
+  const cv=document.createElement("canvas");cv.width=170*DPR;cv.height=160*DPR;d.appendChild(cv);
+  d.insertAdjacentHTML("beforeend",`<div class="n">${e[0]}</div><div class="l">${e[1]}</div>`);gr.appendChild(d);
+  const c=cv.getContext("2d");c.setTransform(DPR,0,0,DPR,0,0);return c});
+sel(T[0]);
+
+const rr=(c,x,y,w,h,r)=>{c.beginPath();c.roundRect(x,y,w,h,r)};
+const cl=v=>Math.max(0,Math.min(1,v));
+function est(c,p,t,x0,y0,x1,y1,base){
+  const f=p.fx;
+  if(f==="metal"||f==="cristal"){
+    const g=c.createLinearGradient(x0,y0,x1,y1),q=(t*.35)%1.4-.2;
+    const L=f==="metal"?["#8a5a0a","#e6b422","#fff3b0"]:["#0fa6b8","#29d9e6","#ffffff"];
+    g.addColorStop(0,L[0]);g.addColorStop(cl(q-.2),L[1]);g.addColorStop(cl(q),L[2]);g.addColorStop(cl(q+.2),L[1]);g.addColorStop(1,L[0]);return g;
+  }
+  if(f==="fogo"){
+    const g=c.createLinearGradient(0,y1,0,y0),w=.5+.15*Math.sin(t*7)+.05*Math.sin(t*13);
+    g.addColorStop(0,"#e8340c");g.addColorStop(cl(w*.7),"#ff8a1f");g.addColorStop(cl(w+.25),"#ffd23c");g.addColorStop(1,"#ff5a14");return g;
+  }
+  return base;
+}
+function zap(c,seed,t,x0,y0,x1,y1,n,cor,lw){
+  let s=Math.floor(t*9)*97+seed*31+1;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+  c.save();c.strokeStyle=cor;c.lineWidth=lw;c.lineJoin="round";
+  for(let k=0;k<n;k++){let x=x0+r()*(x1-x0),y=y0+r()*(y1-y0);c.beginPath();c.moveTo(x,y);
+    for(let j=0;j<5;j++){x+=(r()-.5)*16;y+=(r()-.5)*16;c.lineTo(x,y)}c.stroke()}
+  c.restore();
+}
+function pet(c,p,t,s){
+  const ph=p.i*1.7+s*.9,el=p.fx==="raio"||p.fx==="veio",seed=p.i+s*7;
+  c.clearRect(0,0,170,160);c.save();c.translate(85,96);
+  // partículas orbitando (Lendário e Supremo)
+  if(s>=4){const n=s>=5?6:3;c.fillStyle=p.l;c.globalAlpha=.85;
+    for(let k=0;k<n;k++){const a=t*(.8+k*.07)+k*6.283/n;c.beginPath();c.arc(Math.cos(a)*76,Math.sin(a)*56,2.2+k%2,0,7);c.fill()}
+    c.globalAlpha=1}
+  // antenas: 1 no Jovem, 2 do Adulto em diante
+  for(const x of s===1?[0]:s>=5?[]:s>=2?[-24,24]:[]){const h=s>=3?18:13;
+    c.strokeStyle=p.m;c.lineWidth=3;c.beginPath();c.moveTo(x,-45);c.lineTo(x,-45-h);c.stroke();
+    c.fillStyle=p.l;c.shadowColor=p.m;c.shadowBlur=10;c.globalAlpha=s>=3?.65+.35*Math.sin(t*4+x):1;
+    c.beginPath();c.arc(x,-45-h-3,4,0,7);c.fill();c.globalAlpha=1;c.shadowBlur=0}
+  // módulos laterais (Adulto em diante)
+  if(s>=2)for(const x of[-69,60]){c.fillStyle="#101512";c.strokeStyle=p.m;c.lineWidth=3;rr(c,x,-12,9,24,4);c.fill();c.stroke()}
+  // corpo e moldura
+  c.shadowColor=p.m;c.shadowBlur=(p.fx?20:7)+s*3;
+  c.fillStyle="#101512";rr(c,-60,-45,120,90,20);c.fill();
+  c.lineWidth=5;c.strokeStyle=est(c,p,t,-60,-45,60,45,p.m);rr(c,-60,-45,120,90,20);c.stroke();
+  c.shadowBlur=0;c.fillStyle="#171e19";rr(c,-49,-34,98,68,12);c.fill();
+  if(el){c.save();c.beginPath();c.roundRect(-62.5,-47.5,125,95,22);c.roundRect(-57.5,-42.5,115,85,17);c.clip("evenodd");
+    zap(c,seed,t,-60,-45,60,45,10,p.l,1.3);c.restore()}
+  // moldura interna e cantos reforçados (Mestre em diante)
+  if(s>=3){c.strokeStyle=p.l;c.globalAlpha=.7;c.lineWidth=1.5;rr(c,-54,-39,108,78,15);c.stroke();c.globalAlpha=1;
+    c.fillStyle=p.m;for(const x of[-60,60])for(const y of[-45,45]){c.beginPath();c.arc(x,y,4,0,7);c.fill()}}
+  // coroa de energia (Supremo): substitui as antenas
+  if(s>=5){const X=[-42,-36,-27,-18,-9,0,9,18,27,36,42],Y=[0,14,6,22,6,32,6,22,6,14,0];
+    const g=c.createLinearGradient(0,-47,0,-79);g.addColorStop(0,p.m);g.addColorStop(1,p.l);
+    c.save();c.shadowColor=p.m;c.shadowBlur=12;c.fillStyle=g;c.strokeStyle=p.m;c.lineWidth=2;c.lineJoin="round";
+    c.beginPath();X.forEach((x,i)=>i?c.lineTo(x,-47-Y[i]):c.moveTo(x,-47-Y[i]));c.closePath();c.fill();c.stroke();
+    c.fillStyle=p.l;for(const i of[1,3,5,7,9]){c.globalAlpha=.6+.4*Math.sin(t*4+i);c.beginPath();c.arc(X[i],-47-Y[i],2.6,0,7);c.fill()}
+    c.restore()}
+  if(p.fx==="fogo")for(let k=0;k<9;k++){
+    const x=-52+k*13,v=((t*26+k*37)%26)/26,y=-47-v*22,r=5*(1-v);
+    c.fillStyle=`rgba(255,${120+v*100|0},30,${.85*(1-v)})`;c.beginPath();
+    c.ellipse(x+Math.sin(t*6+k)*2,y,r*.7,r*1.5,0,0,7);c.fill();
+  }
+  // olhos
+  const gx=Math.sin(t*.9+ph)*.9,gy=Math.sin(t*1.3+ph*2)*.6,u=(t+ph)%3.4,b=u<.16?Math.abs(u/.08-1):1;
+  for(const k of[-1,1]){
+    const w=22,h=Math.max(3,30*b),cx=k*24+gx*4,cy=gy*3,top=cy-h/2;
+    c.save();rr(c,cx-w/2,top,w,h,Math.min(w,h)*.38);
+    c.fillStyle=est(c,p,t,cx-w/2,top,cx+w/2,top+h,p.o);c.shadowColor=p.o;c.shadowBlur=p.fx?8:0;c.fill();c.shadowBlur=0;
+    if(el){c.clip();zap(c,seed,t+.3,cx-w/2,top,cx+w/2,top+h,3,p.l,1)}
+    c.restore();
+    if(b>.5){c.fillStyle=p.l;c.beginPath();c.arc(cx-w*.18+gx*3,top+h*.24+gy*2,3.6,0,7);c.fill()}
+  }
+  c.restore();
+}
+function quadro(ms){CTX.forEach((c,s)=>pet(c,cor,ms/1000,s));requestAnimationFrame(quadro)}
+requestAnimationFrame(quadro);
+</script>
+</body>
+</html>

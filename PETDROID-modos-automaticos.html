@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PETDROID · Modos automáticos</title>
+<style>
+:root{--bg:#0b100d;--cartao:#141b17;--borda:#25362b;--destaque:#63e56f;--texto:#d6f5df;--suave:#8aa595;color-scheme:dark;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 32px}
+h1{margin:0;text-align:center;font-size:30px;letter-spacing:.12em;color:var(--destaque)}
+.sub{text-align:center;color:var(--suave);font-size:13px;margin:4px 0 16px}
+#sw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--borda);background:var(--c);padding:0;cursor:pointer}
+.sw.r{border-color:#ffe9a0;box-shadow:0 0 8px var(--c)}
+.sw.on{outline:2px solid var(--texto);outline-offset:3px}
+#info{text-align:center;margin:16px 0 14px;font-size:14px;color:var(--suave)}#info b{color:var(--texto)}
+.jogos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.c{background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:14px}
+h2{margin:0 0 10px;font-size:18px}
+canvas{display:block;width:100%;max-width:320px;aspect-ratio:3/4;margin:0 auto;background:#0e1511;border:1px solid var(--borda);border-radius:14px}
+ul{margin:12px 0 0;padding-left:18px;color:var(--suave);font-size:13px;line-height:1.5}
+.nota{color:var(--suave);font-size:11px;text-align:center;margin-top:22px}
+</style>
+</head>
+<body>
+<h1>PETDROID</h1>
+<div class="sub">modos automáticos · prévia</div>
+<div id="sw"></div>
+<div id="info"></div>
+<div class="jogos">
+  <section class="c"><h2>🏓 Pong</h2><canvas id="a"></canvas>
+    <ul><li>O pet vai para o centro e se desfaz em pequenos pixels.</li>
+    <li>Os pixels se separam e formam duas versões menores, de dois olhos, que viram as raquetes.</li>
+    <li>Outra versão minúscula, também de dois olhos, vira a bolinha; os pixels pontilhados marcam o meio do campo.</li>
+    <li>No fim da rodada, tudo volta ao centro e se reúne para começar outra vez.</li></ul></section>
+  <section class="c"><h2>🐍 Cobrinha</h2><canvas id="b"></canvas>
+    <ul><li>Antes de começar, ele vai encolhendo e perdendo pixels até virar a cabeça da cobra.</li>
+    <li>Um pontinho vai surgindo na tela, ele vai atrás, come e cresce.</li>
+    <li>Ao chegar a 30 pontos, o corpo vira pixels que se reorganizam e ele volta ao tamanho normal.</li>
+    <li>Se for interrompido (toque na tela durante o jogo), ele explode em pixels e se remonta com cara de bravo por alguns segundos.</li></ul></section>
+</div>
+<div class="nota">Aqui as cores raras aparecem só com brilho. Os efeitos completos delas ficam no app.</div>
+<script>
+const COM=[["Verde-esmeralda","#63e56f","#3ee877","#c8ffd8"],["Verde-limão","#b5ff2e","#c6ff4d","#f2ffd0"],["Azul-ciano","#2ee6e6","#4df0f0","#d0ffff"],["Azul-elétrico","#2f7bff","#4d95ff","#d6e6ff"],["Azul-marinho","#2a4fb8","#4d74e0","#c9d6ff"],["Roxo","#8b3dff","#a368ff","#e6d6ff"],["Lilás","#c9a0ff","#d7b8ff","#f3e9ff"],["Rosa","#ff8ac4","#ff9fd0","#ffe0f0"],["Magenta","#ff2bd6","#ff55e0","#ffd0f7"],["Vermelho","#ff3b3b","#ff5c5c","#ffd6d6"],["Laranja","#ff8a1f","#ffa04d","#ffe3c7"],["Amarelo","#ffe63b","#fff066","#fffbd0"],["Dourado","#e6b422","#f2c94c","#fff1c2"],["Branco","#f2f2f2","#ffffff","#c9d3ce"],["Preto","#4a4a4a","#9a9a9a","#e8e8e8"]];
+const RAR=[["Ouro metálico","#e6b422","#e6b422","#ffffff"],["Ciano cristal","#29d9e6","#29d9e6","#ffffff"],["Roxo elétrico","#8b3dff","#9b5cff","#e3c8ff"],["Fogo","#ff6a1a","#ff6a1a","#fff3b0"],["Verde elétrico","#6bff1f","#6bff1f","#e4ffb8"]];
+const T=[...COM.map(a=>[...a,0]),...RAR.map(a=>[...a,1])].map((a,i)=>({i:i+1,nome:a[0],m:a[1],o:a[2],l:a[3],r:a[4]}));
+let cor=T[0];
+const sw=document.getElementById("sw"),info=document.getElementById("info");
+function sel(p){cor=p;T.forEach(q=>q.b.classList.toggle("on",q===p));info.innerHTML=`<b>${p.i}. ${p.nome}</b>`}
+T.forEach(p=>{const b=document.createElement("button");b.className="sw"+(p.r?" r":"");b.style.setProperty("--c",p.m);
+  b.title=p.nome;b.setAttribute("aria-label",p.nome);b.onclick=()=>sel(p);sw.appendChild(b);p.b=b});
+sel(T[0]);
+
+const W=300,H=400,DPR=window.devicePixelRatio||1;
+const [CA,CB]=["a","b"].map(id=>{const cv=document.getElementById(id);cv.width=W*DPR;cv.height=H*DPR;
+  const c=cv.getContext("2d");c.setTransform(DPR,0,0,DPR,0,0);return c});
+const rr=(c,x,y,w,h,r)=>{c.beginPath();c.roundRect(x,y,w,h,r)};
+const lim=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+// o pet em miniatura: mesmo rosto, em qualquer tamanho (ol = número de olhos: 2, 1 ou 0)
+function mini(c,x,y,s,p,t,gx,gy,ol=2,br=0){
+  const u=(t+p.i*1.7)%3.4,b=br?1:(u<.16?Math.abs(u/.08-1):1);
+  c.save();c.translate(x,y);c.scale(s,s);
+  c.shadowColor=br?"#ff3b3b":p.m;c.shadowBlur=p.r?12:6;
+  c.fillStyle="#101512";rr(c,-60,-45,120,90,20);c.fill();
+  c.lineWidth=Math.max(5,1.7/s);c.strokeStyle=br?"#ff3b3b":p.m;c.stroke();
+  c.shadowBlur=0;c.fillStyle="#171e19";rr(c,-49,-34,98,68,12);c.fill();
+  const ks=ol===2?[-1,1]:ol===1?[0]:[];
+  for(const k of ks){
+    const h=Math.max(3,30*b),cx=k*24+gx*4,cy=gy*3;
+    c.fillStyle=p.o;rr(c,cx-11,cy-h/2,22,h,Math.min(22,h)*.38);c.fill();
+    if(b>.5&&s>.15){c.fillStyle=p.l;c.beginPath();c.arc(cx-4+gx*3,cy-h/2+h*.24,3.6,0,7);c.fill()}
+    if(br&&k){c.fillStyle="#171e19";c.beginPath();c.moveTo(cx-14,cy-17);c.lineTo(cx+14,cy-17);c.lineTo(k<0?cx+14:cx-14,cy+1);c.closePath();c.fill();
+      c.strokeStyle="#ff3b3b";c.lineWidth=4;c.beginPath();c.moveTo(k<0?cx-13:cx+13,cy-17);c.lineTo(k<0?cx+13:cx-13,cy-3);c.stroke()}
+  }
+  c.restore();
+}
+
+// ---------- PONG: pet -> pixels -> raquetes/bolinha/rede -> joga -> pixels -> pet ----------
+// fases: 0 parado · 1 se desfaz · 2 forma o jogo · 3 joga · 4 volta ao centro · 5 se reúne
+const P={f:0,ft:0,bx:150,by:200,vx:0,vy:0,ly:200,ry:200,el:0,er:0,pl:0,pr:0};
+const LX=34,RX=266,PS=.2,BS=.14;
+function saque(){P.bx=150;P.by=200;P.vx=(Math.random()<.5?-1:1)*170;P.vy=(Math.random()-.5)*160;
+  P.el=(Math.random()-.5)*44;P.er=(Math.random()-.5)*44}
+
+// partículas: g0 raquete esq., g1 raquete dir., g2 bolinha, g3 pontilhado do meio
+const PT=[];
+function mk(g,n,fn){for(let i=0;i<n;i++){const a=Math.random()*7,d=16+Math.random()*34;
+  PT.push({g,sx:(Math.random()-.5)*60,sy:(Math.random()-.5)*44,dx:Math.cos(a)*d,dy:Math.sin(a)*d,
+    w:(Math.random()-.5)*40,dl:Math.random()*.4,ci:Math.floor(Math.random()*3),...fn(i)})}}
+mk(0,40,()=>({ox:(Math.random()-.5)*22,oy:(Math.random()-.5)*16}));
+mk(1,40,()=>({ox:(Math.random()-.5)*22,oy:(Math.random()-.5)*16}));
+mk(2,10,()=>({ox:(Math.random()-.5)*9,oy:(Math.random()-.5)*7}));
+mk(3,22,i=>({ox:0,oy:44+i*16}));
+const ed=(q,dl)=>{const x=lim((q-dl)/.6,0,1);return x*x*(3-2*x)};
+const sm=q=>q*q*(3-2*q);
+
+function pong(c,dt,t){
+  const dur=[1.2,1.0,1.4,11,1.2,.8];P.ft+=dt;
+  if(P.ft>dur[P.f]){P.ft=0;P.f=(P.f+1)%6;
+    if(P.f===2){saque();P.vx0=P.vx;P.vy0=P.vy;P.ly=200;P.ry=200;P.pl=0;P.pr=0}
+    if(P.f===3){P.vx=P.vx0;P.vy=P.vy0}}
+  const q=lim(P.ft/dur[P.f],0,1);
+  let u=0,vq=0,ga=0,gl=0,pa=0,oa=0;
+  switch(P.f){
+    case 0:pa=1;break;
+    case 1:u=sm(q);pa=1-Math.min(1,q*2.5);ga=gl=Math.min(1,q*3);break;
+    case 2:u=1;vq=q;oa=lim((q-.85)/.15,0,1);ga=1-oa;gl=1;break;
+    case 3:u=1;vq=1;oa=1;gl=1;break;
+    case 4:u=1;vq=1-q;oa=1-lim(q*5,0,1);ga=1-oa;gl=1;break;
+    case 5:u=1-sm(q);pa=lim((q-.4)/.6,0,1);ga=gl=1-pa;break;
+  }
+  if(P.f===3){
+    P.bx+=P.vx*dt;P.by+=P.vy*dt;
+    if(P.by<12){P.by=12;P.vy=Math.abs(P.vy)}if(P.by>388){P.by=388;P.vy=-Math.abs(P.vy)}
+    const mv=(y,al)=>y+lim(al-y,-160*dt,160*dt);
+    P.ly=mv(P.ly,P.vx<0?P.by+P.el:200);P.ry=mv(P.ry,P.vx>0?P.by+P.er:200);
+    if(P.bx<46&&P.vx<0){if(Math.abs(P.by-P.ly)<14){P.vx=-P.vx*1.05;P.vy=lim(P.vy+(P.by-P.ly)*4,-260,260);P.el=(Math.random()-.5)*44}
+      else if(P.bx<28){P.pr++;saque()}}
+    if(P.bx>254&&P.vx>0){if(Math.abs(P.by-P.ry)<14){P.vx=-P.vx*1.05;P.vy=lim(P.vy+(P.by-P.ry)*4,-260,260);P.er=(Math.random()-.5)*44}
+      else if(P.bx>272){P.pl++;saque()}}
+  }
+  c.clearRect(0,0,W,H);
+  const cs=[cor.m,cor.o,cor.l],O=[[LX,P.ly],[RX,P.ry],[P.bx,P.by],[150,0]];
+
+  // pixels
+  if(ga>0||gl>0){
+    for(const p of PT){
+      const a=p.g===3?gl:ga;if(a<=0)continue;
+      const o=O[p.g],tx=o[0]+p.ox,ty=p.g===3?p.oy:o[1]+p.oy;
+      const x0=150+p.sx+p.dx*u,y0=200+p.sy+p.dy*u,v=ed(vq,p.dl),sw=Math.sin(v*Math.PI)*p.w;
+      const x=x0+(tx-x0)*v+sw*.5,y=y0+(ty-y0)*v+sw,z=p.g===3?4:3;
+      c.globalAlpha=a;c.fillStyle=cs[p.ci];
+      if(p.g===3||p.g===2){c.shadowColor=cor.m;c.shadowBlur=p.g===3?0:6}
+      c.fillRect(x-z/2,y-z/2,z,z);c.shadowBlur=0}
+    c.globalAlpha=1}
+
+  // pet inteiro (parado, desfazendo ou se reunindo)
+  if(pa>0){c.globalAlpha=pa;mini(c,150,200,.5,cor,t,Math.sin(t)*.8,0,2);c.globalAlpha=1}
+
+  // jogo: placar, raquetes de um olho e bolinha sem olhos
+  if(oa>0){
+    c.globalAlpha=oa;
+    c.fillStyle="#8aa595";c.font="bold 22px system-ui,sans-serif";c.textAlign="center";c.fillText(P.pl+" : "+P.pr,150,32);
+    const pl=P.f===3;
+    mini(c,LX,P.ly,PS,cor,t,pl?lim((P.bx-LX)/150,-1,1):Math.sin(t)*.8,pl?lim((P.by-P.ly)/200,-1,1):0,2);
+    mini(c,RX,P.ry,PS,cor,t,pl?lim((P.bx-RX)/150,-1,1):Math.sin(t)*.8,pl?lim((P.by-P.ry)/200,-1,1):0,2);
+    mini(c,P.bx,P.by,BS,cor,t,pl?lim(P.vx/200,-1,1):0,pl?lim(P.vy/260,-1,1):0,2);
+    c.globalAlpha=1}
+}
+
+// ---------- COBRINHA: pontinho surge, ele vai atrás, come e cresce ----------
+// fases: 0 encolhe · 1 joga · 2 volta ao tamanho normal (50 pontos) · 3 explode · 4 se remonta · 5 bravo
+const META=30,S={f:0,ft:0,pp:[],sh:[]};
+function resS(){Object.assign(S,{x:150,y:200,a:0,h:[],len:4,pts:0,fx:0,fy:0,food:false,fa:0,wait:.6})}
+resS();
+
+function corpo(c,n,m=1){
+  c.fillStyle=cor.m;
+  for(let k=n-1;k>=1;k--){const i=S.h.length-1-k*5;if(i<0)continue;
+    c.globalAlpha=m*(.5+.5*(1-k/S.len));rr(c,S.h[i][0]-4.5,S.h[i][1]-4.5,9,9,3.5);c.fill()}
+  c.globalAlpha=1;
+}
+// transforma a cobra em pixels (vel = força da explosão; 0 = parados)
+function pixels(vel){
+  const pos=[[S.x,S.y,12]];
+  for(let k=1;k<S.len;k++){const i=S.h.length-1-k*5;if(i>=0)pos.push([S.h[i][0],S.h[i][1],4])}
+  S.pp=[];
+  for(const [x,y,n] of pos)for(let j=0;j<n;j++){const a=Math.random()*7,v=(60+Math.random()*130)*vel;
+    S.pp.push({x:x+(Math.random()-.5)*6,y:y+(Math.random()-.5)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,sx:0,sy:0,
+      tx:150+(Math.random()-.5)*60,ty:200+(Math.random()-.5)*44,dl:Math.random()*.4,ci:Math.floor(Math.random()*3)})}
+}
+function explode(){pixels(1);S.f=3;S.ft=0;S.food=false}
+document.getElementById("b").addEventListener("pointerdown",()=>{if(S.f===1)explode()});
+
+function cobra(c,dt,t){
+  S.ft+=dt;c.clearRect(0,0,W,H);
+  const cs=[cor.m,cor.o,cor.l];
+  if(S.f===0){ // encolhe antes de começar, perdendo pixels
+    const q=lim((S.ft-.6)/1.6,0,1),s=.5-.37*sm(q);
+    if(q>0&&q<1)for(let n=0;n<2;n++){const a=Math.random()*7,v=20+Math.random()*50;
+      S.sh.push({x:150+(Math.random()-.5)*120*s,y:200+(Math.random()-.5)*90*s,vx:Math.cos(a)*v,vy:Math.sin(a)*v+10,l:0,ci:Math.floor(Math.random()*3)})}
+    for(const p of S.sh){p.l+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-1.5*dt;p.vy*=1-1.5*dt;
+      c.globalAlpha=Math.max(0,1-p.l/.9);c.fillStyle=cs[p.ci];c.fillRect(p.x-1.5,p.y-1.5,3,3)}
+    c.globalAlpha=1;S.sh=S.sh.filter(p=>p.l<.9);
+    mini(c,150,200,s,cor,t,Math.sin(t)*.8*(1-q),0);
+    if(S.ft>2.9){S.f=1;S.ft=0;S.sh=[];resS()}
+    return}
+  if(S.f===1){ // joga
+    if(S.food){let d=Math.atan2(S.fy-S.y,S.fx-S.x)-S.a;d=Math.atan2(Math.sin(d),Math.cos(d));S.a+=lim(d,-4*dt,4*dt)}
+    else S.a+=Math.sin(t*1.3)*dt*1.5;
+    S.x+=Math.cos(S.a)*100*dt;S.y+=Math.sin(S.a)*100*dt;
+    if(S.x<14||S.x>286||S.y<14||S.y>386)S.a=Math.atan2(200-S.y,150-S.x);
+    S.x=lim(S.x,8,292);S.y=lim(S.y,8,392);
+    const L=S.h[S.h.length-1];if(!L||Math.hypot(S.x-L[0],S.y-L[1])>=1.5)S.h.push([S.x,S.y]);
+    if(S.h.length>S.len*5+12)S.h.shift();
+    if(S.food){S.fa+=dt;if(Math.hypot(S.fx-S.x,S.fy-S.y)<10){S.food=false;S.pts++;S.len++;S.wait=.7;
+      if(S.pts>=META){pixels(0);for(const p of S.pp){p.sx=p.x;p.sy=p.y}S.f=2;S.ft=0;return}}}
+    else{S.wait-=dt;if(S.wait<=0){S.fx=30+Math.random()*240;S.fy=50+Math.random()*310;S.food=true;S.fa=0}}
+    c.fillStyle="#8aa595";c.font="13px system-ui,sans-serif";c.textAlign="center";c.fillText("pontos: "+S.pts+" / "+META,150,24);
+    corpo(c,S.len);
+    if(S.food){
+      if(S.fa<.5){c.strokeStyle=cor.l;c.globalAlpha=1-S.fa*2;c.lineWidth=2;c.beginPath();c.arc(S.fx,S.fy,S.fa*60,0,7);c.stroke();c.globalAlpha=1}
+      c.fillStyle=cor.l;c.shadowColor=cor.m;c.shadowBlur=10;c.beginPath();c.arc(S.fx,S.fy,4+1.2*Math.sin(t*6),0,7);c.fill();c.shadowBlur=0}
+    mini(c,S.x,S.y,.13,cor,t,Math.cos(S.a),Math.sin(S.a));
+    return}
+  if(S.f===2){ // meta atingida: a cobra vira pixels que se reorganizam no pet de tamanho normal
+    const q=lim(S.ft/2,0,1),pa=lim((q-.75)/.25,0,1),ba=1-lim(S.ft/.35,0,1);
+    c.fillStyle="#8aa595";c.font="13px system-ui,sans-serif";c.textAlign="center";c.fillText("pontos: "+META+" / "+META,150,24);
+    if(ba>0){corpo(c,S.len,ba);c.globalAlpha=ba;mini(c,S.x,S.y,.13,cor,t,Math.cos(S.a),Math.sin(S.a));c.globalAlpha=1}
+    for(const p of S.pp){const v=ed(q,p.dl),w=Math.sin(v*Math.PI)*14;
+      c.globalAlpha=1-pa;c.fillStyle=cs[p.ci];c.fillRect(p.sx+(p.tx-p.sx)*v+w-1.5,p.sy+(p.ty-p.sy)*v-w-1.5,3,3)}
+    c.globalAlpha=pa;mini(c,150,200,.5,cor,t,Math.sin(t)*.8,0);c.globalAlpha=1;
+    if(q>.9){c.globalAlpha=lim((q-.9)/.1,0,1);c.fillStyle=cor.l;c.font="bold 20px system-ui,sans-serif";c.fillText(META+" pontos!",150,300);c.globalAlpha=1}
+    if(S.ft>3.4){resS();S.f=0;S.ft=0}
+    return}
+  if(S.f===3){ // explode em pixels
+    for(const p of S.pp){p.x=lim(p.x+p.vx*dt,3,297);p.y=lim(p.y+p.vy*dt,3,397);p.vx*=1-1.8*dt;p.vy*=1-1.8*dt;
+      c.fillStyle=cs[p.ci];c.fillRect(p.x-1.5,p.y-1.5,3,3)}
+    if(S.ft>.9){for(const p of S.pp){p.sx=p.x;p.sy=p.y}S.f=4;S.ft=0}
+    return}
+  if(S.f===4){ // pixels se remontam no centro
+    const q=lim(S.ft/1.3,0,1),pa=lim((q-.7)/.3,0,1);
+    for(const p of S.pp){const v=ed(q,p.dl),w=Math.sin(v*Math.PI)*12;
+      c.globalAlpha=1-pa;c.fillStyle=cs[p.ci];c.fillRect(p.sx+(p.tx-p.sx)*v+w-1.5,p.sy+(p.ty-p.sy)*v-w-1.5,3,3)}
+    c.globalAlpha=pa;mini(c,150,200,.5,cor,t,0,0,2,1);c.globalAlpha=1;
+    if(S.ft>1.3){S.f=5;S.ft=0}
+    return}
+  // 5: remontado, com expressão de bravo
+  const sh=S.ft<.5?Math.sin(t*50)*(1.5*(1-S.ft/.5)):0;
+  mini(c,150+sh,200,.5,cor,t,0,0,2,1);
+  if(S.ft>3){resS();S.f=0;S.ft=0}
+}
+
+let ult=0;
+function quadro(ms){const t=ms/1000,dt=Math.min(.05,t-ult);ult=t;pong(CA,dt,t);cobra(CB,dt,t);requestAnimationFrame(quadro)}
+requestAnimationFrame(quadro);
+</script>
+</body>
+</html>
