@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PETDROID · Sons</title>
+<style>
+:root{--bg:#0b100d;--cartao:#141b17;--borda:#25362b;--destaque:#63e56f;--texto:#d6f5df;--suave:#8aa595;color-scheme:dark;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 32px;max-width:640px;margin-inline:auto}
+h1{margin:0;text-align:center;font-size:30px;letter-spacing:.12em;color:var(--destaque)}
+.sub{text-align:center;color:var(--suave);font-size:13px;margin:4px 0 16px}
+.vol{display:flex;align-items:center;gap:12px;background:var(--cartao);border:1px solid var(--borda);border-radius:14px;padding:10px 14px;font-size:13px;color:var(--suave)}
+.vol input{flex:1;accent-color:var(--destaque)}
+h2{font-size:15px;margin:22px 4px 8px;color:var(--suave);font-weight:600}
+.s{display:flex;align-items:center;gap:12px;background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:10px 12px;margin-bottom:8px}
+.s button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--destaque);color:var(--bg);font-size:18px;cursor:pointer}
+.s button.on{box-shadow:0 0 0 4px #63e56f44}
+.s b{display:block;font-size:15px}.s span{font-size:12px;color:var(--suave)}
+.nota{color:var(--suave);font-size:11px;text-align:center;margin-top:20px}
+</style>
+</head>
+<body>
+<h1>PETDROID</h1>
+<div class="sub">exemplos de sons · toque para ouvir</div>
+<label class="vol">Volume <input id="vol" type="range" min="0" max="100" value="45"></label>
+<div id="lista"></div>
+<div class="nota">Todos os sons são gerados no próprio aparelho, sem arquivos de áudio. Use o volume de mídia do celular.</div>
+<script>
+let ac,mestre;
+function audio(){
+  if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();mestre=ac.createGain();mestre.connect(ac.destination)}
+  if(ac.state==="suspended")ac.resume();
+  mestre.gain.value=(document.getElementById("vol").value/100)**2*.6;return ac}
+// nota: frequência inicial -> final, duração, onda, volume, atraso
+function n(f0,f1,d,tipo="square",v=.5,at=0){
+  const t=ac.currentTime+at,o=ac.createOscillator(),g=ac.createGain();
+  o.type=tipo;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+d);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(mestre);o.start(t);o.stop(t+d+.02);return d}
+const seq=(lista,tipo,v)=>{let t=0;for(const [a,b,d,gap=.02] of lista){n(a,b,d,tipo,v,t);t+=d+gap}}
+const SONS=[
+ ["Reações",[
+  ["Carinho","gorjeio feliz subindo",()=>seq([[600,1000,.09],[900,1400,.09],[1100,1800,.14]],"triangle",.6)],
+  ["Curioso","um “hã?” em duas notinhas",()=>seq([[500,900,.14,.05],[700,650,.1]],"sine",.7)],
+  ["Irritado","resmungo grave, três vezes",()=>seq([[190,140,.12,.06],[180,130,.12,.06],[170,110,.18]],"sawtooth",.35)],
+  ["Acordando","dois bips subindo",()=>seq([[400,700,.08,.04],[600,950,.12]],"square",.35)],
+  ["Dormindo","suspiro descendo, bem suave",()=>{n(700,300,.6,"sine",.5);n(420,200,.7,"sine",.3,.55)}],
+ ]],
+ ["Sistema",[
+  ["Carregador","zap elétrico ao ligar na tomada",()=>{n(200,1800,.12,"sawtooth",.3);n(1800,500,.12,"square",.25,.12);n(90,60,.05,"square",.3,.02)}],
+  ["Subiu de nível","arpejo de vitória",()=>seq([[523,523,.09],[659,659,.09],[784,784,.09],[1047,1047,.25]],"square",.3)],
+  ["Nasceu um pet raro","brilho mágico subindo",()=>{let f=880;for(let i=0;i<9;i++){n(f,f*1.02,.1,"triangle",.4,i*.07);f*=1.12}n(2400,2400,.6,"sine",.35,.65)}],
+ ]],
+ ["Jogos",[
+  ["Pong: raquete","toc seco",()=>n(440,430,.06,"square",.4)],
+  ["Pong: parede","toc mais grave",()=>n(300,290,.06,"square",.4)],
+  ["Pong: ponto","queda de ponto",()=>n(880,220,.28,"square",.35)],
+  ["Cobrinha: comeu","nhac em duas notas",()=>seq([[600,1000,.06,.01],[900,1200,.08]],"square",.35)],
+  ["Cobrinha: fim","descida triste",()=>seq([[500,500,.12],[420,420,.12],[350,350,.12],[260,200,.3]],"square",.3)],
+ ]],
+];
+const L=document.getElementById("lista");
+for(const [titulo,itens] of SONS){
+  L.insertAdjacentHTML("beforeend",`<h2>${titulo}</h2>`);
+  for(const [nome,desc,fn] of itens){
+    const d=document.createElement("div");d.className="s";
+    d.innerHTML=`<button aria-label="Tocar ${nome}">▶</button><div><b>${nome}</b><span>${desc}</span></div>`;
+    const b=d.querySelector("button");
+    b.onclick=()=>{audio();fn();b.classList.add("on");setTimeout(()=>b.classList.remove("on"),500)};
+    L.appendChild(d);
+  }
+}
+</script>
+</body>
+</html>
