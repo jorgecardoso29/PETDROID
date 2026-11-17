@@ -1,0 +1,68 @@
+name: Gerar APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Descompactar
+        shell: bash
+        run: unzip -q -o pet-android.zip
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Localizar projeto Android
+        id: project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -f "settings.gradle" || -f "settings.gradle.kts" ]]; then
+            project_dir="."
+          elif [[ -f "pet-android/settings.gradle" || -f "pet-android/settings.gradle.kts" ]]; then
+            project_dir="pet-android"
+          else
+            echo "Não foi encontrado settings.gradle ou settings.gradle.kts na raiz nem em pet-android/."
+            find . -maxdepth 3 -type f \( -name 'settings.gradle*' -o -name 'gradlew' \) -print
+            exit 1
+          fi
+
+          echo "project_dir=$project_dir" >> "$GITHUB_OUTPUT"
+          echo "Projeto Android encontrado em: $project_dir"
+
+      - name: Compilar
+        shell: bash
+        working-directory: ${{ steps.project.outputs.project_dir }}
+        run: |
+          set -euo pipefail
+
+          if [[ -x "./gradlew" ]]; then
+            ./gradlew assembleDebug --no-daemon
+          elif command -v gradle >/dev/null 2>&1; then
+            gradle assembleDebug --no-daemon
+          else
+            echo "Gradle Wrapper não encontrado e o comando gradle não está disponível."
+            exit 1
+          fi
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pet-apk
+          path: ${{ steps.project.outputs.project_dir }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
